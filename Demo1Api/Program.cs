@@ -3,21 +3,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
+// ================= DB CONTEXT =================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 🔴 ADD CORS
+// ================= CORS =================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular",
-        policy =>
-        {
-            policy
-                .WithOrigins("http://localhost:4200")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers();
@@ -26,6 +24,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// ================= MIDDLEWARE =================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -33,10 +32,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// 🔴 PHẢI ĐẶT TRƯỚC MapControllers
 app.UseCors("AllowAngular");
-
 app.UseAuthorization();
 app.MapControllers();
 

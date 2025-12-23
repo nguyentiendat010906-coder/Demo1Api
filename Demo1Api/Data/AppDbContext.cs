@@ -12,6 +12,9 @@ namespace Demo1Api.Data
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Invoice> Invoices => Set<Invoice>();
+        public DbSet<Table> Tables { get; set; }
+         public DbSet<TableGroup> TableGroups { get; set; }
+
         public DbSet<InvoiceDetail> InvoiceDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

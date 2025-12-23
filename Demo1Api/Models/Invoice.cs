@@ -4,8 +4,13 @@
     {
         public int Id { get; set; }
 
-        public int CustomerId { get; set; }          // ← CỘT BẮT BUỘC
-        public Customer Customer { get; set; } = null!;
+        // ===== TABLE (BẮT BUỘC) =====
+        public int TableId { get; set; }
+        public Table Table { get; set; } = null!;
+
+        // ===== CUSTOMER (CHƯA CẦN KHI MỞ BÀN) =====
+        public int? CustomerId { get; set; }
+        public Customer? Customer { get; set; }
 
         public DateTime InvoiceDate { get; set; }
 
@@ -15,5 +20,4 @@
 
         public List<InvoiceDetail> InvoiceDetails { get; set; } = new();
     }
-
 }

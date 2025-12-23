@@ -8,6 +8,10 @@
 
         public decimal Price { get; set; }
 
-        public int Stock { get; set; }
+        public int? Stock { get; set; }      // cho phép NULL
+
+        public string Category { get; set; } = null!;
+
+        public string UnitType { get; set; } = null!;
     }
 }
