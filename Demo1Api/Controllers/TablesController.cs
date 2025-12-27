@@ -22,25 +22,29 @@ namespace Demo1Api.Controllers
         [HttpGet]
         public IActionResult GetAll([FromQuery] int? groupId)
         {
-            var query = _context.Tables
-                .Include(t => t.TableGroup)
+            var query = _context.TableGroups
+                .Include(g => g.Tables)
                 .AsQueryable();
 
-            if (groupId.HasValue)
-                query = query.Where(t => t.TableGroupId == groupId);
+            if (groupId.HasValue && groupId.Value != 0)
+                query = query.Where(g => g.Id == groupId);
 
-            var tables = query.Select(t => new
+            var result = query.Select(g => new
             {
-                t.Id,
-                t.Name,
-                t.Capacity,
-                t.Status,
-                t.TableGroupId,
-                TableGroupName = t.TableGroup.Name
+                id = g.Id,
+                name = g.Name,
+                tables = g.Tables.Select(t => new
+                {
+                    id = t.Id,
+                    name = t.Name,
+                    status = t.Status,
+                    tableGroupId = t.TableGroupId
+                }).ToList()
             }).ToList();
 
-            return Ok(tables);
+            return Ok(result);
         }
+
 
         // ===============================
         // GET: api/tables/{id}
@@ -59,7 +63,7 @@ namespace Demo1Api.Controllers
             {
                 table.Id,
                 table.Name,
-                table.Capacity,
+                
                 table.Status,
                 table.TableGroupId,
                 TableGroupName = table.TableGroup.Name
@@ -75,8 +79,7 @@ namespace Demo1Api.Controllers
             if (string.IsNullOrWhiteSpace(table.Name))
                 return BadRequest("Name is required");
 
-            if (table.Capacity <= 0)
-                return BadRequest("Capacity must be greater than 0");
+            
 
             var groupExists = _context.TableGroups.Any(g => g.Id == table.TableGroupId);
             if (!groupExists)
@@ -103,8 +106,7 @@ namespace Demo1Api.Controllers
             if (!string.IsNullOrWhiteSpace(updated.Name))
                 table.Name = updated.Name;
 
-            if (updated.Capacity > 0)
-                table.Capacity = updated.Capacity;
+           
 
             _context.SaveChanges();
             return Ok(table);
@@ -150,5 +152,44 @@ namespace Demo1Api.Controllers
 
             return NoContent();
         }
+        // ===============================
+        // POST: api/tables/{id}/open
+        // ===============================
+        [HttpPost("{id}/open")]
+        public IActionResult OpenTable(int id)
+        {
+            var table = _context.Tables.FirstOrDefault(t => t.Id == id);
+            if (table == null)
+                return NotFound("Table not found");
+
+            if (table.Status != "empty")
+                return BadRequest("Table is not empty");
+
+            // 1️⃣ Tạo invoice mới
+            var invoice = new Invoice
+            {
+                TableId = table.Id,
+                InvoiceDate = DateTime.Now,   
+                Status = "Open",
+                TotalAmount = 0               
+            };
+
+
+            _context.Invoices.Add(invoice);
+            _context.SaveChanges();
+
+            // 2️⃣ Update bàn
+            table.Status = "serving";
+            table.CurrentInvoiceId = invoice.Id;
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                invoiceId = invoice.Id,
+                tableId = table.Id
+            });
+        }
+
     }
 }

@@ -17,75 +17,86 @@ namespace Demo1Api.Controllers
         }
 
         // ======================
+        // DTOs
+        // ======================
+        public class AddDetailDto
+        {
+            public int InvoiceId { get; set; }
+            public int ProductId { get; set; }
+            public int Quantity { get; set; } = 1;
+        }
+
+        public class UpdateDetailDto
+        {
+            public int DetailId { get; set; }
+            public int Quantity { get; set; }
+        }
+
+        // ======================
         // POST: api/invoicedetails/add
         // thêm hoặc tăng số lượng
         // ======================
         [HttpPost("add")]
-        public IActionResult Add(
-            int invoiceId,
-            int productId,
-            int quantity = 1)
+        public IActionResult Add([FromBody] AddDetailDto dto)
         {
             var invoice = _context.Invoices
                 .Include(i => i.InvoiceDetails)
-                .FirstOrDefault(i => i.Id == invoiceId);
+                .FirstOrDefault(i => i.Id == dto.InvoiceId);
 
             if (invoice == null)
                 return NotFound("Invoice not found");
 
-            var product = _context.Products.Find(productId);
+            var product = _context.Products.Find(dto.ProductId);
             if (product == null)
                 return NotFound("Product not found");
 
             var detail = invoice.InvoiceDetails
-                .FirstOrDefault(d => d.ProductId == productId);
+                .FirstOrDefault(d => d.ProductId == dto.ProductId);
 
             if (detail == null)
             {
                 detail = new InvoiceDetail
                 {
-                    InvoiceId = invoiceId,
-                    ProductId = productId,
+                    InvoiceId = dto.InvoiceId,
+                    ProductId = dto.ProductId,
                     ProductName = product.Name,
                     UnitPrice = product.Price,
-                    Quantity = quantity
+                    Quantity = dto.Quantity
                 };
                 _context.InvoiceDetails.Add(detail);
             }
             else
             {
-                detail.Quantity += quantity;
+                detail.Quantity += dto.Quantity;
             }
 
             // ===== RECALC TOTAL =====
-            invoice.TotalAmount = invoice.InvoiceDetails
-                .Sum(d => d.UnitPrice * d.Quantity);
+            invoice.TotalAmount = invoice.InvoiceDetails.Sum(d => d.UnitPrice * d.Quantity);
 
             _context.SaveChanges();
-            return Ok();
+            return Ok(detail);
         }
 
         // ======================
         // PUT: api/invoicedetails/update
         // ======================
         [HttpPut("update")]
-        public IActionResult UpdateQuantity(int detailId, int quantity)
+        public IActionResult UpdateQuantity([FromBody] UpdateDetailDto dto)
         {
             var detail = _context.InvoiceDetails
                 .Include(d => d.Invoice)
                 .ThenInclude(i => i.InvoiceDetails)
-                .FirstOrDefault(d => d.Id == detailId);
+                .FirstOrDefault(d => d.Id == dto.DetailId);
 
             if (detail == null)
                 return NotFound();
 
-            detail.Quantity = quantity;
+            detail.Quantity = dto.Quantity;
 
-            detail.Invoice.TotalAmount = detail.Invoice.InvoiceDetails
-                .Sum(d => d.UnitPrice * d.Quantity);
+            detail.Invoice.TotalAmount = detail.Invoice.InvoiceDetails.Sum(d => d.UnitPrice * d.Quantity);
 
             _context.SaveChanges();
-            return Ok();
+            return Ok(detail);
         }
 
         // ======================
@@ -111,5 +122,28 @@ namespace Demo1Api.Controllers
             _context.SaveChanges();
             return Ok();
         }
+
+        // ======================
+        // GET: api/invoicedetails/by-invoice/{invoiceId}
+        // ======================
+        [HttpGet("by-invoice/{invoiceId}")]
+        public IActionResult GetByInvoice(int invoiceId)
+        {
+            var details = _context.InvoiceDetails
+                .Where(d => d.InvoiceId == invoiceId)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.ProductId,
+                    d.ProductName,
+                    d.Quantity,
+                    d.UnitPrice,
+                    Total = d.Quantity * d.UnitPrice
+                })
+                .ToList();
+
+            return Ok(details);
+        }
+
     }
 }

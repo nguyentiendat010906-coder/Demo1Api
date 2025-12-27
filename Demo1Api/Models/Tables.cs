@@ -1,4 +1,6 @@
-﻿namespace Demo1Api.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Demo1Api.Models
 {
     public class Table
     {
@@ -6,14 +8,16 @@
 
         public string Name { get; set; } = null!;
 
-        public int Capacity { get; set; }
-
         public string Status { get; set; } = "empty";
 
-        // 🔑 FK
+        // 🔑 FK nhóm bàn
         public int TableGroupId { get; set; }
 
-        // ✅ nullable để khỏi warning
+        // 🔗 Invoice đang phục vụ (QUAN TRỌNG)
+        public int? CurrentInvoiceId { get; set; }   // 👈 THÊM DÒNG NÀY
+
+        // tránh vòng lặp JSON
+        [JsonIgnore]
         public TableGroup? TableGroup { get; set; }
     }
 }
